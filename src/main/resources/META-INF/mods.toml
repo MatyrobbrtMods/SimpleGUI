@@ -1,0 +1,11 @@
+modLoader="javafml"
+loaderVersion="[40,)"
+license="MIT"
+
+[[mods]]
+    modId="simplegui"
+    version="1.0"
+    displayName="SimpleGui"
+    description='''
+    A library mod adding GUI utilities.
+    '''

@@ -1,0 +1,121 @@
+plugins {
+    id 'eclipse'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+}
+
+version = '1.0'
+group = 'com.matyrobbrt.simplegui' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = 'simplegui'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+sourceSets {
+    ap {}
+    main {
+        runtimeClasspath += ap.output
+    }
+}
+configurations {
+    apImplementation.extendsFrom(minecraft)
+}
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+minecraft {
+    mappings channel: 'parchment', version: '2022.05.02-1.18.2'
+
+    accessTransformers.from file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    runs {
+        all {
+            mods {
+                simplegui {
+                    source sourceSets.main as SourceSet
+                }
+            }
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', 'simplegui'
+        }
+
+        client {}
+        server {}
+        gameTestServer {}
+
+        data {
+            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            args '--mod', 'simplegui', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+repositories {
+    maven {
+        name 'prog'
+        url 'https://dvs1.progwml6.com/files/maven'
+        content {
+            includeGroup 'mezz.jei'
+        }
+    }
+    maven { url 'https://modmaven.dev/' }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
+
+    compileOnly fg.deobf("mezz.jei:jei-1.18.2:9.7.0.195:api")
+    implementation sourceSets.ap.output
+
+    annotationProcessor sourceSets.ap.output
+    annotationProcessor 'com.google.code.gson:gson:2.9.0'
+    annotationProcessor 'com.google.guava:guava:31.1-jre'
+
+    def srgUtils = 'net.minecraftforge:srgutils:0.4.13'
+    apImplementation srgUtils
+    annotationProcessor srgUtils
+}
+
+void configureJarTask(Jar jar) {
+    jar.configure {
+        jar.manifest {
+            attributes([
+                    "Specification-Title"     : "SimpleGui",
+                    "Specification-Vendor"    : "Matyrobbrt",
+                    "Specification-Version"   : "1", // We are version 1 of ourselves
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : project.version,
+                    "Implementation-Vendor"   : "Matyrobbrt",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            ])
+        }
+        jar.from sourceSets.main.output
+        jar.from(sourceSets.ap.output) {
+            exclude 'com/matyrobbrt/simplegui/annotations/process/**'
+        }
+    }
+}
+
+tasks.create('noReobfJar', Jar) {
+    configureJarTask(it)
+    archiveClassifier.set('nonreobf')
+}
+
+jar {
+    configureJarTask(jar)
+    dependsOn('noReobfJar')
+}
+tasks.build.finalizedBy('reobfJar')
+
+tasks.named('compileJava', JavaCompile).configure {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.compilerArgs.addAll([
+            '-processor', 'com.matyrobbrt.simplegui.annotations.process.AnnotationProcessor',
+            "-AmappingsLocation=$buildDir/createMcpToSrg/output.tsrg"
+    ])
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.getGeneratedSourceOutputDirectory().set(file('src/generated/resources'))
+    dependsOn('createMcpToSrg')
+}

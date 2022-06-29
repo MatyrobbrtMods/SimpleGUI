@@ -1,0 +1,6 @@
+{
+  "only_call_on": "coremods/only_call_on.js",
+  "check_caller": "coremods/check_caller.js",
+  "override_method": "coremods/override_method.js",
+  "accessors": "coremods/accessors.js"
+}
