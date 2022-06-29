@@ -150,6 +150,27 @@ function removeModifier(access, toRemove) {
     return access;
 }
 
+/**
+ * Finds or creates a method.
+ * @param classNode the node of the class to check in.
+ * @param name the name of the method to find
+ * @param desc the desc of the method to find
+ * @param modifiers the modifiers of the new method, if it needs to be created
+ * @returns {MethodNode} the found or created method
+ */
+function findOrCreateMethod(classNode, name, desc, modifiers) {
+    var type = getType(desc);
+    var method = findMethodNode(classNode, name, desc);
+    if (!method) {
+        method = classNode.visitMethod(modifiers, name, desc, null, null);
+        method.visitCode();
+        method.visitInsn(type.getOpcode(Opcodes.IRETURN));
+        method.visitMaxs(0, 0);
+        method.visitEnd();
+    }
+    return method;
+}
+
 function findMethodNode(classNode, name, desc) {
     for (var x = 0; x < classNode.methods.length; x++) {
         var method = classNode.methods[x];

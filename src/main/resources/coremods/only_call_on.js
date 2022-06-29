@@ -1,18 +1,35 @@
 var ASMAPI = Java.type('net.minecraftforge.coremod.api.ASMAPI');
 var Opcodes = Java.type('org.objectweb.asm.Opcodes');
-var MethodInsnNode = Java.type('org.objectweb.asm.tree.MethodInsnNode');
 var Label = Java.type('org.objectweb.asm.Label');
 
 function initializeCoreMod() {
     ASMAPI.loadFile('coremods/utils.js');
 
-    var data = ASMAPI.loadData('coremods/only_call_on.json');
+    var data = ASMAPI.loadData('coremods/call_only_on.json');
     var ret = {};
     for (var name in data) {
         var dt = data[name];
-        transform(ret, dt.clazz, dt.method.name, dt.method.desc, dt.side, dt.logical);
+        if (!dt.logical && dt.method.name == '<clinit>') {
+            clinit(ret, dt.clazz, dt.size);
+        } else {
+            transform(ret, dt.clazz, dt.method.name, dt.method.desc, dt.side, dt.logical);
+        }
     }
     return ret;
+}
+
+function clinit(ret, className, dist) {
+    ret[className + "#<clinit>"] = {
+        'target': {
+            'type': 'CLASS',
+            'name': className
+        },
+        'transformer': function (node) {
+            var clinit = findOrCreateMethod(node, '<clinit>', '()V', Opcodes.ACC_STATIC);
+            doTransform(clinit, className, '<clinit>', '()V', dist, false);
+            return node;
+        }
+    }
 }
 
 function transform(ret, className, method, desc, dist, logical) {
@@ -24,20 +41,24 @@ function transform(ret, className, method, desc, dist, logical) {
             'methodDesc': desc
         },
         'transformer': function (node) {
-            var actualMethod = {
-                'clazz': className,
-                'name': method,
-                'desc': desc
-            };
-            if (logical) {
-                insertHeadInstructions(node, createLogicalCheck(dist.toLocaleUpperCase(), actualMethod).get());
-            } else {
-                insertHeadInstructions(node, createPhysicalCheck(dist.toLocaleUpperCase(), actualMethod).get());
-            }
-            node.maxStack += 5;
+            doTransform(node, className, method, desc, dist, logical)
             return node;
         }
     }
+}
+
+function doTransform(node, className, method, desc, dist, logical) {
+    var actualMethod = {
+        'clazz': className,
+        'name': method,
+        'desc': desc
+    };
+    if (logical) {
+        insertHeadInstructions(node, createLogicalCheck(dist.toLocaleUpperCase(), actualMethod).get());
+    } else {
+        insertHeadInstructions(node, createPhysicalCheck(dist.toLocaleUpperCase(), actualMethod).get());
+    }
+    node.maxStack += 5;
 }
 
 function createPhysicalCheck(side, method) {

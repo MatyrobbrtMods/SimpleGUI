@@ -13,10 +13,36 @@ function initializeCoreMod() {
         withFields(ret, clazz, dt.methods);
         for (var x in dt.methods) {
             var method = dt.methods[x];
-            transformMethod(ret, clazz, method, x);
+            if (method.name == '<clinit>') {
+                transformClinit(ret, clazz, method.callers, method.blacklist, method.exception);
+            } else {
+                transformMethod(ret, clazz, method, x);
+            }
         }
     }
     return ret;
+}
+
+function transformClinit(ret, clazz, callers, blacklist, exception) {
+    ret[className + "#<clinit>()V"] = {
+        'target': {
+            'type': 'CLASS',
+            'name': clazz
+        },
+        'transformer': function (node) {
+            var cinit = findOrCreateMethod(node, '<clinit>', '()V', Opcodes.ACC_STATIC);
+            var insn = newInsnList();
+            var label0 = new Label();
+            insn.visitLabel(label0);
+            for (var i = 0; i < callers.length; i++)
+                insn.visitLdcInsn(callers[i]);
+            insn.visitMethodInsn(Opcodes.INVOKESTATIC, "java/util/List", "of", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/List;", true);
+            addCheck(insn, blacklist, exception);
+            insertHeadInstructions(cinit, insn.get());
+            cinit.maxStack += 3;
+            return node;
+        }
+    }
 }
 
 function computeFieldName(method, i) {
@@ -41,28 +67,32 @@ function transformMethod(ret, className, method, i) {
             var label0 = new Label();
             insn.visitLabel(label0);
             insn.visitFieldInsn(Opcodes.GETSTATIC, internalName, fieldName, "Ljava/util/List;");
-            var label1 = new Label();
-            insn.visitLabel(label1);
-            insn.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/StackWalker$Option", "RETAIN_CLASS_REFERENCE", "Ljava/lang/StackWalker$Option;");
-            insn.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/StackWalker", "getInstance", "(Ljava/lang/StackWalker$Option;)Ljava/lang/StackWalker;", false);
-            insn.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackWalker", "getCallerClass", "()Ljava/lang/Class;", false);
-            insn.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class", "getName", "()Ljava/lang/String;", false);
-            insn.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/List", "contains", "(Ljava/lang/Object;)Z", true);
-            var label2 = new Label();
-            insn.visitJumpInsn(method.blacklist ? Opcodes.IFEQ : Opcodes.IFNE, label2);
-            var label3 = new Label();
-            insn.visitLabel(label3);
-            insn.visitTypeInsn(Opcodes.NEW, "java/lang/IllegalCallerException");
-            insn.visitInsn(Opcodes.DUP);
-            insn.visitLdcInsn(method.exception);
-            insn.throwWithMessage("java/lang/IllegalCallerException");
-            insn.visitLabel(label2);
-            insn.visitFrame(Opcodes.F_SAME, 0, 0);
+            addCheck(insn, method.blacklist, method.exception);
             insertHeadInstructions(node, insn.get());
             node.maxStack += 3;
             return node;
         }
     }
+}
+
+function addCheck(insn, blacklist, exception) {
+    var label1 = new Label();
+    insn.visitLabel(label1);
+    insn.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/StackWalker$Option", "RETAIN_CLASS_REFERENCE", "Ljava/lang/StackWalker$Option;");
+    insn.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/StackWalker", "getInstance", "(Ljava/lang/StackWalker$Option;)Ljava/lang/StackWalker;", false);
+    insn.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/StackWalker", "getCallerClass", "()Ljava/lang/Class;", false);
+    insn.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class", "getName", "()Ljava/lang/String;", false);
+    insn.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/List", "contains", "(Ljava/lang/Object;)Z", true);
+    var label2 = new Label();
+    insn.visitJumpInsn(blacklist ? Opcodes.IFEQ : Opcodes.IFNE, label2);
+    var label3 = new Label();
+    insn.visitLabel(label3);
+    insn.visitTypeInsn(Opcodes.NEW, "java/lang/IllegalCallerException");
+    insn.visitInsn(Opcodes.DUP);
+    insn.visitLdcInsn(exception);
+    insn.throwWithMessage("java/lang/IllegalCallerException");
+    insn.visitLabel(label2);
+    insn.visitFrame(Opcodes.F_SAME, 0, 0);
 }
 
 function withFields(ret, className, fields) {
@@ -72,14 +102,7 @@ function withFields(ret, className, fields) {
             'name': className
         },
         'transformer': function (node) {
-            var clinit = findMethodNode(node, '<clinit>', '()V');
-            if (!clinit) {
-                clinit = node.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
-                clinit.visitCode();
-                clinit.visitInsn(Opcodes.RETURN);
-                clinit.visitMaxs(0, 0);
-                clinit.visitEnd();
-            }
+            var clinit = findOrCreateMethod(node, '<clinit>', '()V', Opcodes.ACC_STATIC);
             var stack = 0;
             for (var i = 0; i < fields.length; i++) {
                 var field = fields[i];
@@ -92,10 +115,10 @@ function withFields(ret, className, fields) {
                 insn.push(getLabelInsn(new Label()));
                 for (var z in field.callers) {
                     insn.visitLdcInsn(field.callers[z]);
-                    stack++;
                 }
                 insn.visitMethodInsn(Opcodes.INVOKESTATIC, "java/util/List", "of", "(Ljava/lang/Object;)Ljava/util/List;", true);
                 insn.visitFieldInsn(Opcodes.PUTSTATIC, node.name, fieldName, "Ljava/util/List;");
+                stack++;
                 clinit.instructions.insert(insn.get());
             }
             clinit.maxStack += stack;
