@@ -206,6 +206,12 @@ public class SimpleButton extends GuiElement {
         RenderSystem.disableDepthTest();
     }
 
+    @Override
+    public void syncFrom(GuiElement element) {
+        super.syncFrom(element);
+        this.active = element.active;
+    }
+
     public enum State {
         DISABLED,
         ACTIVE,
