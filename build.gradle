@@ -5,7 +5,6 @@ plugins {
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
 
-version = '1.0'
 group = 'com.matyrobbrt.simplegui' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'simplegui'
 
@@ -14,6 +13,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 sourceSets {
     ap {}
     main {
+        compileClasspath += ap.output
         runtimeClasspath += ap.output
     }
 }
@@ -23,7 +23,7 @@ configurations {
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
-    mappings channel: 'parchment', version: '2022.05.02-1.18.2'
+    mappings channel: 'parchment', version: '2022.09.18-1.19.2'
 
     accessTransformers.from file('src/main/resources/META-INF/accesstransformer.cfg')
 
@@ -64,9 +64,13 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
+    minecraft 'net.minecraftforge:forge:1.19.2-43.1.1'
 
-    compileOnly fg.deobf("mezz.jei:jei-1.18.2:9.7.0.195:api")
+    compileOnly(fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}"))
+    compileOnly(fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}"))
+    // at runtime, use the full JEI jar for Forge
+    runtimeOnly(fg.deobf("mezz.jei:jei-${mc_version}-forge:${jei_version}"))
+	
     implementation sourceSets.ap.output
 
     annotationProcessor sourceSets.ap.output
@@ -107,7 +111,8 @@ jar {
     configureJarTask(jar)
     dependsOn('noReobfJar')
 }
-tasks.build.finalizedBy('reobfJar')
+tasks.jar.finalizedBy('reobfJar')
+java.withSourcesJar()
 
 tasks.named('compileJava', JavaCompile).configure {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
@@ -118,4 +123,12 @@ tasks.named('compileJava', JavaCompile).configure {
     options.annotationProcessorPath = configurations.annotationProcessor
     options.getGeneratedSourceOutputDirectory().set(file('src/generated/resources'))
     dependsOn('createMcpToSrg')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifacts = [jar, sourcesJar]
+        }
+    }
 }

@@ -4,7 +4,7 @@ import com.matyrobbrt.simplegui.SimpleGUIMod;
 import mezz.jei.api.runtime.IRecipesGui;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenOpenEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
@@ -20,7 +20,7 @@ public class SimpleGUIModClient {
         }
     }
 
-    public static void jeiOpen(ScreenOpenEvent event) {
+    public static void jeiOpen(ScreenEvent.Opening event) {
         if (Minecraft.getInstance().screen instanceof SimpleGui<?> screen) {
             if (event.getScreen() instanceof IRecipesGui) {
                 screen.switchingToJEI = true;

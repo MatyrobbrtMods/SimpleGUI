@@ -31,7 +31,7 @@ public class Window extends TexturedElement implements VirtualSlot.GuiWindow {
 
     private static final Color OVERLAY_COLOR = Color.rgbai(60, 60, 60, 128);
 
-    private final SelectedWindowData data;
+    protected final SelectedWindowData data;
     private boolean dragging = false;
     private double dragX;
     private double dragY;

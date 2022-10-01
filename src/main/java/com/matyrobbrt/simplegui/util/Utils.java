@@ -2,9 +2,9 @@ package com.matyrobbrt.simplegui.util;
 
 import com.matyrobbrt.simplegui.SimpleGUIMod;
 import com.matyrobbrt.simplegui.util.col.ReverseIterator;
+import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ public class Utils {
      * Helper to call the constructor for string text components and also convert any non-breaking spaces to spaces so that they render properly.
      */
     public static MutableComponent getString(String component) {
-        return new TextComponent(cleanString(component));
+        return Component.literal(cleanString(component));
     }
 
     /**
@@ -42,7 +42,7 @@ public class Utils {
     }
 
     public static Component emptyComponent() {
-        return TextComponent.EMPTY;
+        return Component.empty();
     }
 
     @SuppressWarnings({"unchecked"})
@@ -101,7 +101,8 @@ public class Utils {
     }
 
     public static ResourceLocation getRegistryName(Item item) {
-        return item.getRegistryName();
+        //noinspection deprecation
+        return Registry.ITEM.getKey(item);
     }
 
     public static <T> Iterable<T> reverseIterator(List<T> list) {

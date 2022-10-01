@@ -3,9 +3,16 @@ loaderVersion="[40,)"
 license="MIT"
 
 [[mods]]
+    version="${file.jarVersion}"
     modId="simplegui"
-    version="1.0"
     displayName="SimpleGui"
     description='''
     A library mod adding GUI utilities.
     '''
+[[dependencies.simplegui]]
+    modId="minecraft"
+    mandatory=true
+# This version range declares a minimum of the current minecraft version up to but not including the next major version
+    versionRange="[1.19.2,1.20)"
+    ordering="NONE"
+    side="BOTH"

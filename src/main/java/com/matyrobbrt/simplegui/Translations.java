@@ -1,7 +1,7 @@
 package com.matyrobbrt.simplegui;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 
 public enum Translations {
     CLOSE_BUTTON("button", "close");
@@ -13,6 +13,6 @@ public enum Translations {
     }
 
     public MutableComponent make(Object... args) {
-        return new TranslatableComponent(key, args);
+        return Component.translatable(key, args);
     }
 }

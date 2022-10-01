@@ -10,6 +10,7 @@ import com.matyrobbrt.simplegui.client.element.window.Window;
 import com.matyrobbrt.simplegui.client.element.slot.GuiVirtualSlot;
 import com.matyrobbrt.simplegui.inventory.SelectedWindowData;
 import com.matyrobbrt.simplegui.inventory.SimpleMenu;
+import com.matyrobbrt.simplegui.inventory.slot.InsertableSlot;
 import com.matyrobbrt.simplegui.inventory.slot.VirtualSlot;
 import com.matyrobbrt.simplegui.util.col.LRU;
 import com.matyrobbrt.simplegui.util.Utils;
@@ -66,11 +67,13 @@ public abstract class SimpleGui<C extends AbstractContainerMenu> extends Virtual
         addGuiElements();
     }
 
-    protected void addSlots() {
+    protected void addSlots(boolean includeVirtual) {
         final var size = menu.slots.size();
         for (var i = 0; i < size; i++) {
             final var slot = menu.slots.get(i);
-            addRenderableWidget(SlotFactory.Registry.create(slot, this, slot.x - 1, slot.y - 1));
+            if (slot instanceof VirtualSlot && !includeVirtual) continue;
+            final var gui = SlotFactory.Registry.create(slot, this, slot.x - 1, slot.y - 1);
+            if (gui != null) addRenderableWidget(gui);
         }
     }
 
@@ -219,6 +222,13 @@ public abstract class SimpleGui<C extends AbstractContainerMenu> extends Virtual
         RenderSystem.applyModelViewMatrix();
 
         maxZOffsetNoWindows = -(maxZOffset - windowSeparation * windows.size());
+    }
+
+    public <T extends VirtualSlot> List<T> findVirtualSlots(Class<? extends T> clazz, @Nullable SelectedWindowData windowData) {
+        //noinspection unchecked
+        return menu.slots.stream().filter(it -> clazz.isInstance(it) && it instanceof InsertableSlot insertable && insertable.exists(windowData))
+                .map(it -> (T) it)
+                .toList();
     }
 
     protected void drawForegroundText(@Nonnull PoseStack matrix, int mouseX, int mouseY) {

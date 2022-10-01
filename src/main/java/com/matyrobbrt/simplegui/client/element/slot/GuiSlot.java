@@ -109,8 +109,8 @@ public class GuiSlot extends TexturedElement {
     @Override
     public void renderForeground(PoseStack matrix, int mouseX, int mouseY) {
         if (renderHover && isHoveredOrFocused()) {
-            int xPos = x + 1;
-            int yPos = y + 1;
+            int xPos = relativeX + 1;
+            int yPos = relativeY + 1;
             fill(matrix, xPos, yPos, xPos + 16, yPos + 16, DEFAULT_HOVER_COLOR);
             ClientUtil.resetColour();
         }

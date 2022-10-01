@@ -135,8 +135,8 @@ public class SelectedWindowData {
                     final Map<String, WindowPosition> data = GSON.fromJson(reader, TYPE);
                     final var pos = data.computeIfAbsent(name, k -> new WindowPosition(Integer.MAX_VALUE, Integer.MAX_VALUE));
                     return new WritablePosition(
-                            new IntHandler(pos::x, n -> write(name, data, new WindowPosition(n, pos.y()))),
-                            new IntHandler(pos::y, n -> write(name, data, new WindowPosition(pos.x(), n)))
+                            new IntHandler(pos::x, n -> write(name, data, new WindowPosition(n, get(name).y().getAsInt()))),
+                            new IntHandler(pos::y, n -> write(name, data, new WindowPosition(get(name).x.getAsInt(), n)))
                     );
                 }
             } catch (IOException e) {

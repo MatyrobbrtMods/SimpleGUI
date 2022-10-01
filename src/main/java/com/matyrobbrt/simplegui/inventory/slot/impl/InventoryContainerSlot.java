@@ -9,6 +9,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
@@ -71,6 +72,12 @@ public class InventoryContainerSlot extends Slot implements InsertableSlot {
 
     @Override
     public void set(@Nonnull ItemStack stack) {
+        uncheckedSetter.accept(stack);
+        setChanged();
+    }
+
+    @Override
+    public void initialize(@NotNull ItemStack stack) {
         uncheckedSetter.accept(stack);
         setChanged();
     }

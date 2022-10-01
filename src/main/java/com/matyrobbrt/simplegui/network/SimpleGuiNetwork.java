@@ -27,10 +27,9 @@ public class SimpleGuiNetwork {
             int id = 0;
             <P extends Packet> void register(Class<P> pkt, Function<FriendlyByteBuf, P> decoder) {
                 CHANNEL.messageBuilder(pkt, id++)
-                        .consumer((packet, contextSupplier) -> {
+                        .consumerMainThread((packet, contextSupplier) -> {
                             final var ctx = contextSupplier.get();
-                            ctx.enqueueWork(() -> packet.handle(ctx));
-                            return true;
+                            packet.handle(ctx);
                         })
                         .encoder(Packet::encode)
                         .decoder(decoder)

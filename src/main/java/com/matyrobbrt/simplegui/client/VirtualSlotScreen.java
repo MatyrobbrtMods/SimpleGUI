@@ -128,7 +128,7 @@ public abstract class VirtualSlotScreen<T extends AbstractContainerMenu> extends
         if (button != 0 && button != 1 && !pickBlockButton) {
             checkHotbarMouseClicked(button);
         } else if (slot.index != -1) {
-            if (minecraft.options.touchscreen) {
+            if (minecraft.options.touchscreen().get()) {
                 if (slot.hasItem()) {
                     this.clickedSlot = slot;
                     setDraggingItem(ItemStack.EMPTY);

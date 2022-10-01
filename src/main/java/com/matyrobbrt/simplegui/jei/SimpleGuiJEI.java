@@ -1,6 +1,5 @@
 package com.matyrobbrt.simplegui.jei;
 
-import com.matyrobbrt.simplegui.annotations.CheckCaller;
 import com.matyrobbrt.simplegui.client.SimpleGui;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -11,10 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 public class SimpleGuiJEI implements IModPlugin {
     public static final ResourceLocation ID = new ResourceLocation("simplegui", "jei");
 
-    @CheckCaller(
-            named = "mezz.jei.forge.util.AnnotatedInstanceUtil", // Somewhat risky if a JEI update changes that
-            exception = "Tried instantiating the SimpleGUI Jei plugin"
-    )
     public SimpleGuiJEI() {
     }
 
